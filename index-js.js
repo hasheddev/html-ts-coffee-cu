@@ -1,4 +1,4 @@
-import { createWalletClient, custom, createPublicClient, parseEther, defineChain, formatEther } from "https://esm.sh/viem"
+import { createWalletClient, custom, createPublicClient, parseEther, defineChain, formatEther, isAddress } from "https://esm.sh/viem"
 import { contractAddress, abi } from "./constants-js.js"
 
 let walletClient, publicClient
@@ -11,6 +11,11 @@ balanceButton.onclick = getBalance
 const withdrawButton = document.getElementById("withdrawButton")
 withdrawButton.onclick = withdraw
 const ethAmountInput = document.getElementById("ethAmount")
+const addressBalanceButton = document.getElementById("addressBalanceButton")
+addressBalanceButton .onclick = getAddressBalance
+const addressInput = document.getElementById("address")
+const donationBalance = document.getElementById("myBalanceButton")
+donationBalance.onclick = getMyAddressBalance
 
 function connect() {
    typeof window.ethereum !== "undefined" ? getMetamask() : connectButton.innerHTML = "Please install metamask"
@@ -97,6 +102,58 @@ async function withdraw() {
     } else {
         connectButton.innerHTML = "Please install metamask"
     }
+}
+
+async function getMyAddressBalance() {
+     if(typeof window.ethereum !== "undefined") {
+        walletClient = createWalletClient({
+            transport: custom(window.ethereum)
+        })
+        const [account] = await walletClient.requestAddresses()
+
+        publicClient = createPublicClient({
+            transport: custom(window.ethereum)
+        })
+    
+        const data = await publicClient.readContract({
+            address: contractAddress,
+            abi,
+            functionName: "getAddressToAmountFunded",
+            args: [account]
+        })
+        console.log(formatEther(data))
+    }
+    else {
+         connectButton.innerHTML = "Please install metamask"
+    }
+}
+
+async function getAddressBalance() {
+    const addressToQuery = addressInput.value
+    if(!isAddress(addressToQuery)) {
+        addressBalanceButton.innerHTML = "Please Enter valid address"
+        setTimeout(() => {
+            addressBalanceButton.innerHTML = "Query balance"
+        }, 2000)
+        return
+    }
+
+    if(typeof window.ethereum !== "undefined") {
+        const publicClient = createPublicClient({
+            transport: custom(window.ethereum)
+        })
+        const data = await publicClient.readContract({
+            address: contractAddress,
+            abi,
+            functionName: "getAddressToAmountFunded",
+            args: [addressToQuery]
+        })
+        console.log(formatEther(data))
+    }
+    else {
+         connectButton.innerHTML = "Please install metamask"
+    }
+    
 }
 
 async function getCurrentChain(client) {
